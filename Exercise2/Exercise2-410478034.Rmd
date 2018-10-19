@@ -47,10 +47,12 @@ filmVotingData$Timestamp <- with_tz(filmVotingData$Timestamp,"Asia/Taipei")
 2.3 由Timestamp透過`lubridate::hour()`取出學生上網填表的小時值並存在新的變數`filmVotingData$hour`。  
 
 ```{r ans23}
+filmVotingData$hour <- hour(filmVotingData$Timestamp)
 ```
 
 2.4 使用`table()`統計學生最活躍的填表時間。
 
 ```{r ans24}
+table(filmVotingData$hour)
 ```
 
