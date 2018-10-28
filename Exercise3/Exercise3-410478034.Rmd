@@ -19,9 +19,8 @@ classData<-gs_read(gsLMSHabit,ws="公告與練習") #access the 1st worksheet
 變數「公-10-06」為1代表有看公告，請將classData$`公-10-06`改成factor類型且有看公告的人，他的觀察值為"有看公告"；沒看公告的觀察值為"沒看公告"。
 
 ```{r ans11}
-classData$`公-10-06` <- as.factor(classData$`公-10-06`)
 library(stringr)
-classData$`公-10-06` <- str_replace_all(classData$`公-10-06`,c("1"="有看公告","0"="沒看公告"))
+classData$`公-10-06` <- as.factor(str_replace_all(classData$`公-10-06`,c("1"="有看公告","0"="沒看公告")))
 ```
 
 
@@ -89,6 +88,6 @@ hwData$early <- round(hwData$early)
 作業1（即作業代碼為"hw1"）準時交的人中，他們的提早天數分佈如何？請使用`table()`呈現。
 
 ```{r ans25}
-table(hwData[which(hwData$作業代碼 == "hw1" & difftime(deadline, hwData$Timestamp, units = "days")>=0),3])
+table(hwData[which(hwData$作業代碼 == "hw1" & difftime(deadline, hwData$Timestamp, units = "days")>0),3])
 ```
 
