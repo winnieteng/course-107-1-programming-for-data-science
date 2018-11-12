@@ -114,7 +114,10 @@ exData %>%
   mutate(
     `印尼盾IDR/USD`=as.numeric(`印尼盾IDR/USD`),
     `歐元USD/EUR`=as.numeric(`歐元USD/EUR`),
-    `越南盾VND/USD`=as.numeric(`越南盾VND/USD`)
+    `越南盾VND/USD`=as.numeric(`越南盾VND/USD`),
+    `馬克DEM/USD`=as.numeric(`馬克DEM/USD`),
+    `法國法郎FRF/USD`=as.numeric(`法國法郎FRF/USD`),
+    `荷蘭幣NLG/USD`=as.numeric(`荷蘭幣NLG/USD`)
   ) -> exData
 exData
 ```
@@ -135,7 +138,9 @@ exData
 (hint: `colnames()`支援generic replacement; `str_locate()`可找出元素中某個符號的位置;`str_sub()`可取出所要字元)
 ```{r ans33}
 str_locate(colnames(exData), "USD/")
-colnames(exData[c(4,10,15)]) <- str_sub(colnames(exData[c(4,10,15)]),1,2)
+
+colnames(exData)[c(4,10,15)] <- str_sub(colnames(exData[c(4,10,15)]),1,2)
 exData
 ```
+
 
