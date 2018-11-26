@@ -3,10 +3,10 @@ title: "Convert Rmd to R"
 author: "林茂廷"
 output: html_document
 params:
+  workingPath: "/Midterm/ans" 
   deadline: 2018-11-12
-  hwcode: Exercise4
+  hwcode: Miterm
   baseDir: "/Users/martin/Desktop/GitHub/course-107-1-programming-for-data-science/"
-  ansDir: "Exercise4/ans" #放在\Grading_Programs要..
   gsFileNameMapping: "1J9A6We6cdDfOT-11gBgbHC9Qzqu0d457aquy5k1IOCc"
   gsClassInfo: "1E1P2na_-iRzczWxRVa09ldjE9NMidJOX0RGw9muhZfw"
   gsFileUpload: "1G8NjBYgWcQFVT8ms4c5HmWp19V_DvJ5u1rEKVNLRmZs"
@@ -15,6 +15,7 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = params$baseDir)
 ```
 
 ## 引入GS
@@ -32,17 +33,26 @@ library(purrr)
 library(rlang)
 #gs_auth(new_user = TRUE)
 
-paste0(params$baseDir,params$ansDir)->workingPath
-
-# 引入線上繳件資料
-gsSubmit<-gs_key(params$gsFileUpload)
-dataSubmit <- gs_read(gsSubmit,ws="Temp") 
+paste0(".",params$workingPath) -> workingPath
 ```
 
 # Convert Rmd to R
 
 ```{r}
-listOfRmds<-list_files_with_exts(workingPath,"Rmd")
+list.files(workingPath) %>% # 檔名全大寫
+  {file.rename(
+    paste0(workingPath,"/",.),
+    to=paste0(workingPath,"/",toupper(.))
+  )} 
+
+# RMD 改 Rmd
+listOfRMDs <- list_files_with_exts(workingPath,"RMD")
+listOfRMDs %>%
+  {file.rename(
+    .,
+    to=str_replace(.,".RMD",".Rmd")
+  )} 
+listOfRmds <- list_files_with_exts(workingPath,"Rmd")
 ```
 
 **purlInfo** shows if a file fails to be purled. 
@@ -57,35 +67,24 @@ fileListPurl <- function(ix){
     }
   )
 }
-dataSubmit %>%
-  filter(已下載==FALSE) -> 
-  dataSubmitToProcess
-#dataSubmitToProcess <- dataSubmit
-ansRmd <- paste0(workingPath,"/",params$hwcode,"-ans.Rmd")
-paste0(workingPath,"/",dataSubmitToProcess$新檔名) %>%
-  c(.,ansRmd) -> listOfRmds
+
+ansRmd <- paste0(workingPath,"/",params$hwcode,"-ANS.Rmd")
+
 purrr::map(1:length(listOfRmds),fileListPurl) -> purlInfo
 
-# 無法purl 記在dataSubmitToProcess$cannotPurl
-purlInfo %>% str_which("has problems") -> cannotPurl_ind
-dataSubmitToProcess %>% mutate(cannotPurl=(新檔名 %in% listOfRmds[cannotPurl_ind])) -> dataSubmitToProcess
+dataSubmitToProcess <- data.frame(
+  listOfRmds=listOfRmds,
+  cannotPurl=(purlInfo %>% str_detect("has problems"))
+)
 
-dataSubmit %>%
-  filter(已下載==TRUE) %>%
-  bind_rows(dataSubmitToProcess) -> dataSubmit
-dataSubmit %>% gs_edit_cells(gsSubmit,ws="Temp",
-                             input=.,
-                             anchor="A1") 
-#save(dataSubmit,file="cannotPurl.Rda")
 ```
 
 ## 儲存學生答題ans chunk 為list
 
 ```{r}
-listOfRs <- str_replace(listOfRmds,
-                        ".Rmd",".R") 
+listOfRs <- list_files_with_exts(workingPath,"R") 
 # 答案R
-ansR <- listOfRs %>% str_which("ans.R") %>%
+ansR <- listOfRs %>% str_which("ANS.R") %>%
 {listOfRs[.]}
 # 學生R
 studentRs <- setdiff(listOfRs,ansR)
@@ -100,12 +99,10 @@ codeChunkName <- function(codeNameLine){
   # 取出有名chunk的line numbers
   codeNameLine %>% str_which("## ----") ->
     namedChunkLineNumbers
-  
-  str_split_fixed(codeNameLine[namedChunkLineNumbers],
-                  "## ----",
-                  n=4)[,2]->name2
-  str_split_fixed(name2,"---------------------------------------------------------------",
-                  n=4)[,1]->nameFinal
+  # 將#,-與空白格去除
+  codeNameLine[namedChunkLineNumbers] %>% 
+    str_replace_all("#|-|\\s","") -> nameFinal
+
   results<-list(chunkNames=nameFinal,
                 chunkLineNumbers=namedChunkLineNumbers)
   return(results)
@@ -115,7 +112,7 @@ ansR %>% readLines %>%
   codeChunkName %>%
   .$chunkNames -> allChunkNames
 
-ansR %>% str_replace(".R",".Rmd") -> ansRmd
+ansR %>% str_replace("\\.R","\\.Rmd") -> ansRmd
 
 validchunkNames <- setdiff(allChunkNames,"") # 會用到的chunk names
 ```
@@ -207,14 +204,8 @@ return(sheet)
 list_files_with_exts(workingPath,"Rda")-> listOfRdas
 chunkSheetRda<- paste0(workingPath,"/chunkSheet.Rda")
 
-listOfRs %>% chunkExtraction -> chunkSheet2
+listOfRs %>% chunkExtraction -> chunkSheet
 
-if(chunkSheetRda %in% listOfRdas){ #若已有先前學生chunk output, 則append新的上去
-  load(chunkSheetRda)
-  append(chunkSheet,chunkSheet2)-> chunkSheet
-} else {
-  chunkSheet <- chunkSheet2
-}
 # 移除舊的ans sheet
 ansR-> Rfile
 ## 產生資料檔
@@ -227,11 +218,14 @@ if(length(ansSheetLoc)>1){
   chunkSheet[[sheetToRemove]] <- NULL
 }
 
+
 save(chunkSheet,file=paste0(workingPath,"/chunkSheet.Rda"))
 ```
+
 # 執行個別chunks
 
 ```{r}
+# 執行Ans chunks
 Rfile %>% basename %>%
   str_replace(".R","") %>%
   {which((names(chunkSheet)==.))} %>% # ans sheet位置
@@ -243,6 +237,8 @@ ansChunk %>% names %>% str_which("data") -> dataChunksLineNum
 ansChunk[dataChunksLineNum] %>% unlist -> dataProcedures
 pander::evals(dataProcedures) -> eval1
 dataEnv=env()
+setwdWorkingPath<-paste0("setwd('",workingPath,"')")
+eval(parse(text=setwdWorkingPath),envir=dataEnv)
 map_chr(eval1,function(x) x$src) %>%
   paste0(collapse=";") %>%
   {eval(parse(text=.),envir=dataEnv)}
@@ -304,7 +300,7 @@ catchListFun <- function(listOfRs,chunkSheet,workingPath,dataEnv=NULL){
       eval(parse(text=toBeEvaluated))
   }
 
-  RdaName <- Rfile %>% str_replace(".R",".Rda")
+  RdaName <- Rfile %>% str_replace("\\.R","\\.Rda")
   # 各別檔案catchList用自己檔名存成Rda
   save(dataEnv,catchList,file=RdaName)
   }
