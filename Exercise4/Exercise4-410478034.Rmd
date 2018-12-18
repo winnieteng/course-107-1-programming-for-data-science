@@ -143,4 +143,14 @@ colnames(exData)[c(4,10,15)] <- str_sub(colnames(exData[c(4,10,15)]),1,2)
 exData
 ```
 
+```{r}
+#將全部匯率都換的方式
+colnames(exData) -> cNames 
+currencyName <- cNames[-1]
+currencyName %>% str_locate("/") %>%
+  {str_sub(currencyName,1,.[,1]-4)} -> 
+  currencyName
+colnames(exData)[-1]<-currencyName
+exData
+```
 

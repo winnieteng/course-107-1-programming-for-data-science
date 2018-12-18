@@ -25,6 +25,7 @@ library(readr); library(dplyr); library(stringr); library(lubridate)
 # 1. 性別差異
 先執行以下程式引入學生的課外活動調查**classSurvey**及作業成績**hwGrades**資料：
 ```{r data1}
+library(readr)
 classSurvey <- read_csv("https://raw.githubusercontent.com/tpemartin/github-data/master/classSurvey.csv")
 hwGrades <- read_csv("https://raw.githubusercontent.com/tpemartin/github-data/master/hwGrades.csv")
 ```
@@ -151,7 +152,7 @@ is.na(aaa)
 # 2. 誰較早交作業？
 請先執行以下程式引入學生交作業時間**hwSubmit**的資料：
 ```{r data2}
-hwSubmit <- read.csv("https://raw.githubusercontent.com/tpemartin/github-data/master/hwSubmit.csv")
+hwSubmit <- read_csv("https://raw.githubusercontent.com/tpemartin/github-data/master/hwSubmit.csv")
 ```
 
 ## 2.1 class檢查
